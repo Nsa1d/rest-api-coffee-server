@@ -7,6 +7,10 @@ import (
 	"strconv"
 )
 
+//Для наглядности написал сразу тут
+var DrinkNotFound = errors.New("напиток не найден")
+var InvalidID = errors.New("неверный формат ID")
+
 func GetAll() ([]DrinkList, error) {
 	records, err := database.LoadRecords()
 	if err != nil {
@@ -65,7 +69,7 @@ func GetByID(id int) (*Drink, error) {
 		}
 	}
 
-	return nil, errors.New("Напиток не найден")
+	return nil, DrinkNotFound
 }
 
 func generateID(records []database.Record) int {
@@ -120,7 +124,12 @@ func Add(req DrinkCreate) (*Drink, error) {
 }
 
 func Delete(id string) error {
+	//--------Ошибка 1--------
 	idInt, err := strconv.Atoi(id)
+	if err != nil {
+		return fmt.Errorf("%w:%s", InvalidID, id)
+	}
+	//------------------------
 
 	records, err := database.LoadRecords()
 	if err != nil {
@@ -138,7 +147,7 @@ func Delete(id string) error {
 	}
 
 	if !found {
-		return fmt.Errorf("напиток не найден:%w", err)
+		return DrinkNotFound
 	}
 
 	if err := database.SaveRecords(newRecords); err != nil {
@@ -169,7 +178,7 @@ func Update(req DrinkUpdate) (*Drink, error) {
 	}
 
 	if !found {
-		return nil, errors.New("напиток не найден")
+		return nil, DrinkNotFound
 	}
 
 	if err := database.SaveRecords(records); err != nil {

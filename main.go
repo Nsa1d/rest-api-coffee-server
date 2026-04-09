@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 	"rest-api-coffee-server/menu"
 	"strconv"
@@ -46,6 +47,7 @@ func AllAvailableDrinks(c *gin.Context) {
 	c.JSON(http.StatusOK, drinksList)
 }
 
+// Добавил разделение на ошибки-----------------------
 func GetDrinkByID(c *gin.Context) {
 	idStr := c.Param("id")
 
@@ -59,9 +61,15 @@ func GetDrinkByID(c *gin.Context) {
 
 	drink, err := menu.GetByID(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		if errors.Is(err, menu.DrinkNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": err.Error(),
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+		}
 		return
 	}
 	c.JSON(http.StatusOK, drink)
@@ -88,14 +96,25 @@ func CreateDrinks(c *gin.Context) {
 	c.JSON(http.StatusOK, drink)
 }
 
+// В Delete и Update тоже добавил разделение на ошибки
 func DeleteDrinks(c *gin.Context) {
 	id := c.Param("id")
 
 	err := menu.Delete(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		if errors.Is(err, menu.InvalidID) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": err.Error(),
+			})
+		} else if errors.Is(err, menu.DrinkNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": err.Error(),
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+		}
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -124,9 +143,15 @@ func UpdateDrinks(c *gin.Context) {
 
 	drink, err := menu.Update(req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
+		if errors.Is(err, menu.DrinkNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": err.Error(),
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+		}
 		return
 	}
 	c.JSON(http.StatusOK, drink)
